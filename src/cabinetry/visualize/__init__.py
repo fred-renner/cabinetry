@@ -164,6 +164,7 @@ def data_mc(
     colors: Optional[Dict[str, str]] = None,
     close_figure: bool = False,
     save_figure: bool = True,
+    label:str= "Variable",
 ) -> Optional[List[Dict[str, Any]]]:
     """Draws pre- and post-fit data/MC histograms for a ``pyhf`` model and data.
 
@@ -239,11 +240,13 @@ def data_mc(
                 bin_edges = builder._binning(region_dict)
             else:
                 bin_edges = np.arange(len(data_yields[i_chan]) + 1)
-            variable = region_dict.get("Variable", "bin")
+            # variable = region_dict.get("Variable", "bin")
+            variable =  label
         else:
             # fall back to defaults if no config is specified
             bin_edges = np.arange(len(data_yields[i_chan]) + 1)
-            variable = "bin"
+            # variable = "bin"
+            variable = label
 
         for i_sam, sample_name in enumerate(model_prediction.model.config.samples):
             histogram_dict_list.append(
@@ -295,6 +298,7 @@ def templates(
     figure_folder: Union[str, pathlib.Path] = "figures",
     close_figure: bool = False,
     save_figure: bool = True,
+    label: str = "Observable"
 ) -> List[Dict[str, Any]]:
     """Visualizes template histograms (after post-processing) for systematic variations.
 
@@ -358,8 +362,10 @@ def templates(
                 bins = nominal_histo.bins
                 # variable is a required config setting for ntuple inputs, but not for
                 # histogram inputs, so default to "observable" for these cases (the
-                # actual bin edges are preserved here, so not using "bin" as in data_mc)
-                variable = region.get("Variable", "observable")
+                # actual bin edges are preserved here, so not using "bin" as in
+                # data_mc)
+                
+                variable = label
                 nominal = {"yields": nominal_histo.yields, "stdev": nominal_histo.stdev}
 
                 # extract original and modified (after post-processing) variation
@@ -391,7 +397,7 @@ def templates(
                     else:
                         down_orig.update(var_orig)
                         down_mod.update(var_mod)
-
+                
                 figure_label = (
                     f"region: {region['Name']}\nsample: {sample['Name']}"
                     f"\nsystematic: {systematic['Name']}"

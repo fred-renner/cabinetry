@@ -184,10 +184,7 @@ def _fit_model_custom(
     # use parameter settings provided in function arguments if they exist, else defaults
     init_pars = init_pars or model.config.suggested_init()
     fix_pars = fix_pars or model.config.suggested_fixed()
-    # ensure list of tuples, see https://github.com/scikit-hep/pyhf/issues/2462
-    par_bounds = par_bounds or [
-        tuple(bound) for bound in model.config.suggested_bounds()
-    ]
+    par_bounds = par_bounds or model.config.suggested_bounds()
 
     labels = model.config.par_names
 
@@ -860,11 +857,11 @@ def limit(
         f"{model.config.poi_name}"
     )
 
-    # use par_bounds provided in function argument if they exist, else use default
-    # ensure list of tuples, see https://github.com/scikit-hep/pyhf/issues/2462
-    par_bounds = par_bounds or [
-        tuple(bound) for bound in model.config.suggested_bounds()
-    ]
+    # use par_bounds provided in function argument if they exist, else use
+    # default
+
+    par_bounds = par_bounds or model.config.suggested_bounds()
+
     if par_bounds[model.config.poi_index][0] < 0:
         # set lower POI bound to zero (for use with qmu_tilde)
         par_bounds[model.config.poi_index] = (
@@ -874,7 +871,7 @@ def limit(
         log.debug("setting lower parameter bound for POI to 0")
 
     # set default bracket to (0.1, upper POI bound in measurement) if needed
-    bracket_left_default = 0.1
+    bracket_left_default = 0.001
     bracket_right_default = par_bounds[model.config.poi_index][1]
     if bracket is None:
         bracket = (bracket_left_default, bracket_right_default)

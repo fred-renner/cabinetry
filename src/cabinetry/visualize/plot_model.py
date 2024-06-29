@@ -4,7 +4,6 @@ import logging
 import pathlib
 from typing import Any, Dict, List, Optional
 
-import hist.intervals
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,9 +34,6 @@ def data_mc(
     close_figure: bool = False,
 ) -> mpl.figure.Figure:
     """Draws a data/MC histogram with uncertainty bands and ratio panel.
-
-    Uncertainties for data points are drawn using the "Garwood" frequentist coverage
-    interval as provided by ``hist`` via ``hist.intervals.poisson_interval``.
 
     Args:
         histogram_dict_list (List[Dict[str, Any]]): list of samples (with info stored in
@@ -70,10 +66,7 @@ def data_mc(
     for h in histogram_dict_list:
         if h["isData"]:
             data_histogram_yields = h["yields"]
-            # frequentist coverage interval
-            data_histogram_interval = hist.intervals.poisson_interval(
-                np.asarray(data_histogram_yields)
-            )
+            data_histogram_stdev = np.sqrt(data_histogram_yields)
             data_label = h["label"]
         else:
             mc_histograms_yields.append(h["yields"])
@@ -145,7 +138,7 @@ def data_mc(
     data_container = ax1.errorbar(
         bin_centers_data,
         data_histogram_yields,
-        yerr=np.abs(data_histogram_yields - data_histogram_interval),
+        yerr=data_histogram_stdev,
         fmt="o",
         color="k",
     )
@@ -187,14 +180,12 @@ def data_mc(
 
     # data in ratio plot
     data_model_ratio = data_histogram_yields / total_yield
-    data_model_ratio_unc = (
-        np.abs(data_histogram_yields - data_histogram_interval) / total_yield
-    )
+    data_model_ratio_unc = data_histogram_stdev / total_yield
     # mask data in bins where total model yield is 0
     ax2.errorbar(
         bin_centers_data[nonzero_model_yield],
         data_model_ratio[nonzero_model_yield],
-        yerr=data_model_ratio_unc[:, nonzero_model_yield],
+        yerr=data_model_ratio_unc[nonzero_model_yield],
         fmt="o",
         color="k",
     )
@@ -222,6 +213,23 @@ def data_mc(
         ax2.set_xscale("log")
 
     # figure label (region name)
+    print(repr(label))
+    
+
+
+    splitted_label=label.split("\n")
+    
+    
+    if "cls" in splitted_label[0]:
+        splitted_label[0]= "neos"
+    if "bce" in splitted_label[0]:
+        splitted_label[0]= "BCE"
+    if "m_hh" in splitted_label[0]:
+        splitted_label[0]= "$m_{hh}$"
+        
+    label="\n".join(splitted_label)
+
+
     at = mpl.offsetbox.AnchoredText(
         label,
         loc="upper left",
@@ -297,7 +305,7 @@ def templates(
     bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
 
     mpl.style.use(MPL_STYLE)
-    fig = plt.figure(figsize=(8, 6), layout="constrained")
+    fig = plt.figure(figsize=(5.5, 4.5), layout="constrained")
     gs = fig.add_gridspec(nrows=2, ncols=1, hspace=0, height_ratios=[3, 1])
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
@@ -305,19 +313,19 @@ def templates(
     # ratio plot line through unity and stat. uncertainty of nominal
     ax2.plot([bin_edges[0], bin_edges[-1]], [1, 1], "--", color="black", linewidth=1)
     rel_nominal_stat_unc = nominal_histo["stdev"] / nominal_histo["yields"]
-    ax2.bar(
-        bin_centers,
-        2 * rel_nominal_stat_unc,
-        width=bin_width,
-        bottom=1 - rel_nominal_stat_unc,
-        fill=False,
-        linewidth=0,
-        edgecolor="gray",
-        hatch=3 * "/",
-    )
+    # ax2.bar(
+    #     bin_centers,
+    #     2 * rel_nominal_stat_unc,
+    #     width=bin_width,
+    #     bottom=1 - rel_nominal_stat_unc,
+    #     fill=False,
+    #     linewidth=0,
+    #     edgecolor="gray",
+    #     hatch=3 * "/",
+    # )
 
     colors = ["black", "C0", "C1", "C0", "C1"]
-    linestyles = ["-", ":", ":", "--", "--"]
+    linestyles = ["-","--", "--", ":", ":", ]
     all_templates = [
         nominal_histo,
         up_histo_orig,
@@ -325,12 +333,18 @@ def templates(
         up_histo_mod,
         down_histo_mod,
     ]
+    # template_labels = [
+    #     "nominal",
+    #     "up (original)",
+    #     "down (original)",
+    #     "up (modified)",
+    #     "down (modified)",
+    # ]
+
     template_labels = [
         "nominal",
-        "up (original)",
-        "down (original)",
-        "up (modified)",
-        "down (modified)",
+        "up",
+        "down",
     ]
 
     # x positions for lines drawn showing the template distributions
@@ -357,40 +371,40 @@ def templates(
         line_y = [y for y in template["yields"] for _ in range(2)]
 
         ax1.plot(line_x, line_y, color=color, linestyle=linestyle, label=template_label)
-        if template_label == "nominal":
-            # band for stat. uncertainty of nominal prediction
-            ax1.bar(
-                bin_centers,
-                2 * nominal_histo["stdev"],
-                width=bin_width,
-                bottom=nominal_histo["yields"] - nominal_histo["stdev"],
-                fill=False,
-                linewidth=0,
-                edgecolor="gray",
-                hatch=3 * "/",
-            )
-        else:
-            # error bars for up/down variations
-            ax1.errorbar(
-                bin_centers,
-                template["yields"],
-                yerr=template["stdev"],
-                fmt="none",
-                color=color,
-            )
+        # if template_label == "nominal":
+        #     # band for stat. uncertainty of nominal prediction
+        #     ax1.bar(
+        #         bin_centers,
+        #         2 * nominal_histo["stdev"],
+        #         width=bin_width,
+        #         bottom=nominal_histo["yields"] - nominal_histo["stdev"],
+        #         fill=False,
+        #         linewidth=0,
+        #         edgecolor="gray",
+        #         hatch=3 * "/",
+        #     )
+        # else:
+        #     # error bars for up/down variations
+        #     ax1.errorbar(
+        #         bin_centers,
+        #         template["yields"],
+        #         yerr=template["stdev"],
+        #         fmt="none",
+        #         color=color,
+        #     )
 
-            # ratio plot: variation / nominal
-            template_ratio_plot = template["yields"] / nominal_histo["yields"]
-            line_y = [y for y in template_ratio_plot for _ in range(2)]
+        # ratio plot: variation / nominal
+        template_ratio_plot = template["yields"] / nominal_histo["yields"]
+        line_y = [y for y in template_ratio_plot for _ in range(2)]
 
-            ax2.plot(line_x, line_y, color=color, linestyle=linestyle)
-            ax2.errorbar(
-                bin_centers,
-                template_ratio_plot,
-                yerr=template["stdev"] / np.abs(nominal_histo["yields"]),
-                fmt="none",
-                color=color,
-            )
+        ax2.plot(line_x, line_y, color=color, linestyle=linestyle)
+        #     ax2.errorbar(
+        #         bin_centers,
+        #         template_ratio_plot,
+        #         yerr=template["stdev"] / np.abs(nominal_histo["yields"]),
+        #         fmt="none",
+        #         color=color,
+        #     )
 
     # increase font sizes
     for item in (
@@ -410,7 +424,7 @@ def templates(
         label,
         loc="upper left",
         frameon=False,
-        prop={"fontsize": "large", "linespacing": 1.5},
+        prop={"fontsize": "small", "linespacing": 1.5},
     )
     ax1.add_artist(at)
 
