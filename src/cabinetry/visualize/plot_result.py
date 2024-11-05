@@ -220,6 +220,7 @@ def ranking(
 
     # impact axis limits: need largest pre-fit impact
     impact_max = np.amax(np.fabs(np.hstack((impact_prefit_up, impact_prefit_down))))
+    impact_max = 0.5
     ax_impact.set_xlim([-impact_max * 1.1, impact_max * 1.1])
 
     # minor ticks
